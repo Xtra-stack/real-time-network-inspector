@@ -1,4 +1,34 @@
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+import PacketTable from "./components/PacketTable";
+import AlertPacketList from "./components/AlertPacketList";
+
+const SOCKET_URL = "http://localhost:5000";
+
 const App = () => {
+  const [packets, setPackets] = useState([]);
+
+  useEffect(() => {
+    const socket = io(SOCKET_URL);
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+
+    socket.on("packet", (packet) => {
+      console.log("Incoming packet:", packet);
+      setPackets((previousPackets) => [packet, ...previousPackets].slice(0, 100));
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   return (
     <div className="page">
       <header className="header">
@@ -9,12 +39,13 @@ const App = () => {
       <main className="dashboard">
         <section className="card">
           <h2>Live Feed</h2>
-          <p>Incoming packet activity will appear here.</p>
+          <p>Incoming packet activity count: {packets.length}</p>
+          <PacketTable packets={packets} />
         </section>
 
         <section className="card">
           <h2>Suspicious Alerts</h2>
-          <p>Detected alert packets will be listed here.</p>
+          <AlertPacketList packets={packets} />
         </section>
 
         <section className="card">
