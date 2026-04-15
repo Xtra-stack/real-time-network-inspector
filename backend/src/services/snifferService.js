@@ -2,6 +2,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 const readline = require("readline");
 const { analyzePacket } = require("./packetAnalyzer");
+const PacketLog = require("../models/PacketLog");
 
 const startSnifferService = () => {
   const defaultCommand = path.resolve(__dirname, "../../../cpp-sniffer/sniffer");
@@ -24,6 +25,16 @@ const startSnifferService = () => {
       const packet = JSON.parse(line);
       const analyzedPacket = analyzePacket(packet);
       console.log("Analyzed packet:", analyzedPacket);
+
+      PacketLog.create({
+        sourceIp: analyzedPacket.sourceIp,
+        destinationIp: analyzedPacket.destinationIp,
+        protocol: analyzedPacket.protocolType,
+        timestamp: new Date(analyzedPacket.timestamp),
+        alert: analyzedPacket.alert
+      }).catch((error) => {
+        console.error("Could not save packet log:", error.message);
+      });
     } catch (error) {
       console.error("Could not parse packet JSON:", line);
     }
