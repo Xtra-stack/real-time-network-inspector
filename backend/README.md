@@ -10,9 +10,12 @@ Basic Express server scaffold for the network monitoring system.
 3. Start development server:
    npm run dev
 
-## Available endpoint
+## Available endpoints
 
 - GET /api/health
+- GET /api/packets
+- GET /api/alerts
+- GET /api/stats
 
 ## Sniffer service
 
