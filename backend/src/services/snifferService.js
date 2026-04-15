@@ -4,7 +4,7 @@ const readline = require("readline");
 const { analyzePacket } = require("./packetAnalyzer");
 const PacketLog = require("../models/PacketLog");
 
-const startSnifferService = () => {
+const startSnifferService = (io) => {
   const defaultCommand = path.resolve(__dirname, "../../../cpp-sniffer/sniffer");
   const snifferCommand = process.env.SNIFFER_COMMAND || defaultCommand;
   const snifferInterface = process.env.SNIFFER_INTERFACE || "eth0";
@@ -25,6 +25,10 @@ const startSnifferService = () => {
       const packet = JSON.parse(line);
       const analyzedPacket = analyzePacket(packet);
       console.log("Analyzed packet:", analyzedPacket);
+
+      if (io) {
+        io.emit("packet", analyzedPacket);
+      }
 
       PacketLog.create({
         sourceIp: analyzedPacket.sourceIp,
