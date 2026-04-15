@@ -13,3 +13,13 @@ Basic Express server scaffold for the network monitoring system.
 ## Available endpoint
 
 - GET /api/health
+
+## Sniffer service
+
+On startup, the backend starts the C++ sniffer process and reads packet lines from stdout.
+Each line is parsed as JSON and logged to the console.
+
+Environment variables:
+
+- SNIFFER_COMMAND (default: `../cpp-sniffer/sniffer`)
+- SNIFFER_INTERFACE (default: `eth0`)
