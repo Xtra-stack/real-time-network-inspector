@@ -1,6 +1,9 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -58,6 +61,38 @@ std::string getProtocolName(unsigned char protocol) {
     }
 }
 
+std::string formatTimestamp(const struct timeval& packetTime) {
+    std::time_t seconds = packetTime.tv_sec;
+    std::tm utcTime{};
+
+#ifdef _WIN32
+    gmtime_s(&utcTime, &seconds);
+#else
+    gmtime_r(&seconds, &utcTime);
+#endif
+
+    std::ostringstream output;
+    output << std::put_time(&utcTime, "%Y-%m-%dT%H:%M:%S")
+           << '.' << std::setw(6) << std::setfill('0') << packetTime.tv_usec
+           << 'Z';
+
+    return output.str();
+}
+
+std::string toJsonLine(const std::string& sourceIp,
+                       const std::string& destinationIp,
+                       const std::string& protocol,
+                       const std::string& timestamp) {
+    std::ostringstream output;
+    output << '{'
+           << "\"sourceIp\":\"" << sourceIp << "\"," 
+           << "\"destinationIp\":\"" << destinationIp << "\"," 
+           << "\"protocol\":\"" << protocol << "\"," 
+           << "\"timestamp\":\"" << timestamp << "\""
+           << '}';
+    return output.str();
+}
+
 void handlePacket(unsigned char* /*userData*/, const struct pcap_pkthdr* header, const unsigned char* packet) {
     const EthernetHeader* ethernetHeader = reinterpret_cast<const EthernetHeader*>(packet);
 
@@ -74,12 +109,13 @@ void handlePacket(unsigned char* /*userData*/, const struct pcap_pkthdr* header,
     inet_ntop(AF_INET, &ipHeader->sourceAddress, sourceIp, sizeof(sourceIp));
     inet_ntop(AF_INET, &ipHeader->destinationAddress, destinationIp, sizeof(destinationIp));
 
-    std::cout << "Packet captured\n";
-    std::cout << "  Source IP:      " << sourceIp << '\n';
-    std::cout << "  Destination IP: " << destinationIp << '\n';
-    std::cout << "  Protocol:       " << getProtocolName(ipHeader->protocol) << '\n';
-    std::cout << "  Packet Size:    " << header->len << " bytes\n";
-    std::cout << "-----------------------------\n";
+    // Print one compact JSON object per packet so downstream tools can parse it easily.
+    std::cout << toJsonLine(
+        sourceIp,
+        destinationIp,
+        getProtocolName(ipHeader->protocol),
+        formatTimestamp(header->ts)
+    ) << '\n';
 }
 
 int main(int argc, char* argv[]) {
