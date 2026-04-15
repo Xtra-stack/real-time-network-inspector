@@ -137,3 +137,30 @@ body {
   font-size: 0.85rem;
   color: #9c3d3d;
 }
+
+.charts-empty {
+  color: #4b5d79;
+}
+
+.charts-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.chart-card {
+  border: 1px solid #d7deea;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fbfcff;
+}
+
+.chart-card h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #2e4363;
+}
+
+.chart-area {
+  width: 100%;
+  min-height: 240px;
+}

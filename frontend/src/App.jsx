@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import PacketTable from "./components/PacketTable";
 import AlertPacketList from "./components/AlertPacketList";
+import TrafficCharts from "./components/TrafficCharts";
 
 const SOCKET_URL = "http://localhost:5000";
 
@@ -50,7 +51,7 @@ const App = () => {
 
         <section className="card">
           <h2>Traffic Charts</h2>
-          <p>Protocol distribution and traffic trends will appear here.</p>
+          <TrafficCharts packets={packets} />
         </section>
       </main>
     </div>
