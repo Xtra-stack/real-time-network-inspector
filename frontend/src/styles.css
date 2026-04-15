@@ -1,7 +1,7 @@
 :root {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: #14213d;
-  background: #f5f7fb;
+  background: #f4f7fc;
 }
 
 * {
@@ -14,20 +14,26 @@ body {
 
 .page {
   min-height: 100vh;
-  padding: 24px;
+  padding: 24px 16px;
+}
+
+.app-shell {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .header {
   background: #ffffff;
-  border: 1px solid #d7deea;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+  border: 1px solid #d9e2ef;
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(19, 38, 69, 0.06);
 }
 
 .header h1 {
-  margin: 0 0 8px;
-  font-size: 1.7rem;
+  margin: 0 0 6px;
+  font-size: 1.75rem;
 }
 
 .header p {
@@ -35,22 +41,69 @@ body {
   color: #4b5d79;
 }
 
+.stats-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.stat-card {
+  background: #ffffff;
+  border: 1px solid #d9e2ef;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 6px 16px rgba(19, 38, 69, 0.04);
+}
+
+.stat-label {
+  margin: 0 0 4px;
+  color: #5c6f8d;
+  font-size: 0.88rem;
+}
+
+.stat-value {
+  margin: 0;
+  color: #14213d;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
 .dashboard {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  align-items: start;
 }
 
 .card {
   background: #ffffff;
-  border: 1px solid #d7deea;
-  border-radius: 12px;
+  border: 1px solid #d9e2ef;
+  border-radius: 14px;
   padding: 16px;
+  box-shadow: 0 8px 20px rgba(19, 38, 69, 0.05);
+}
+
+.card-wide {
+  grid-column: 1 / -1;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .card h2 {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 1.1rem;
+}
+
+.card-meta {
+  color: #627593;
+  font-size: 0.82rem;
 }
 
 .card p {
@@ -65,7 +118,7 @@ body {
 }
 
 .table-wrapper {
-  margin-top: 12px;
+  margin-top: 6px;
   overflow-x: auto;
 }
 
@@ -145,6 +198,7 @@ body {
 .charts-grid {
   display: grid;
   gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .chart-card {
@@ -163,4 +217,15 @@ body {
 .chart-area {
   width: 100%;
   min-height: 240px;
+}
+
+@media (max-width: 700px) {
+  .header h1 {
+    font-size: 1.4rem;
+  }
+
+  .card-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
