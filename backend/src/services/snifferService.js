@@ -1,6 +1,7 @@
 const path = require("path");
 const { spawn } = require("child_process");
 const readline = require("readline");
+const { analyzePacket } = require("./packetAnalyzer");
 
 const startSnifferService = () => {
   const defaultCommand = path.resolve(__dirname, "../../../cpp-sniffer/sniffer");
@@ -21,7 +22,8 @@ const startSnifferService = () => {
 
     try {
       const packet = JSON.parse(line);
-      console.log("Packet:", packet);
+      const analyzedPacket = analyzePacket(packet);
+      console.log("Analyzed packet:", analyzedPacket);
     } catch (error) {
       console.error("Could not parse packet JSON:", line);
     }
