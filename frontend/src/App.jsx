@@ -5,33 +5,68 @@ import AlertPacketList from "./components/AlertPacketList";
 import TrafficCharts from "./components/TrafficCharts";
 
 const SOCKET_URL = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 const App = () => {
   const [packets, setPackets] = useState([]);
+  const [alerts, setAlerts] = useState([]);
 
-  const alertCount = packets.filter((packet) => packet.alert).length;
+  const alertCount = alerts.length;
   const protocolCount = new Set(
     packets.map((packet) => packet.protocolType || packet.protocol || "UNKNOWN")
   ).size;
 
   useEffect(() => {
-    const socket = io(SOCKET_URL);
+    let socket;
+    let isMounted = true;
 
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
-    });
+    const initializeDashboard = async () => {
+      try {
+        const [packetsResponse, alertsResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/packets`),
+          fetch(`${API_BASE_URL}/alerts`)
+        ]);
 
-    socket.on("packet", (packet) => {
-      console.log("Incoming packet:", packet);
-      setPackets((previousPackets) => [packet, ...previousPackets].slice(0, 100));
-    });
+        const [packetData, alertData] = await Promise.all([
+          packetsResponse.json(),
+          alertsResponse.json()
+        ]);
 
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected");
-    });
+        if (isMounted) {
+          setPackets(Array.isArray(packetData) ? packetData.slice(0, 100) : []);
+          setAlerts(Array.isArray(alertData) ? alertData.slice(0, 100) : []);
+        }
+      } catch (error) {
+        console.error("Failed to load initial packet data:", error);
+      }
+
+      socket = io(SOCKET_URL);
+
+      socket.on("connect", () => {
+        console.log("Socket connected:", socket.id);
+      });
+
+      socket.on("packet", (packet) => {
+        console.log("Incoming packet:", packet);
+        setPackets((previousPackets) => [packet, ...previousPackets].slice(0, 100));
+
+        if (packet.alert) {
+          setAlerts((previousAlerts) => [packet, ...previousAlerts].slice(0, 100));
+        }
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Socket disconnected");
+      });
+    };
+
+    initializeDashboard();
 
     return () => {
-      socket.disconnect();
+      isMounted = false;
+      if (socket) {
+        socket.disconnect();
+      }
     };
   }, []);
 
@@ -64,7 +99,7 @@ const App = () => {
           <section className="card card-wide">
             <div className="card-head">
               <h2>Live Feed</h2>
-              <span className="card-meta">Latest 100 packets</span>
+              <span className="card-meta">Latest 10 packets</span>
             </div>
             <PacketTable packets={packets} />
           </section>
@@ -74,7 +109,7 @@ const App = () => {
               <h2>Suspicious Alerts</h2>
               <span className="card-meta">Red-flag packets</span>
             </div>
-            <AlertPacketList packets={packets} />
+            <AlertPacketList packets={alerts} />
           </section>
 
           <section className="card">
