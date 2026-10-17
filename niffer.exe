@@ -1,0 +1,79 @@
+[1mdiff --git a/backend/src/services/packetAnalyzer.js b/backend/src/services/packetAnalyzer.js[m
+[1mdeleted file mode 100644[m
+[1mindex 15af5d6..0000000[m
+[1m--- a/backend/src/services/packetAnalyzer.js[m
+[1m+++ /dev/null[m
+[36m@@ -1,73 +0,0 @@[m
+[31m-const SUSPICIOUS_KEYWORDS = ["login", "password", "admin"];[m
+[31m-[m
+[31m-const detectProtocolType = (packet) => {[m
+[31m-  const baseProtocol = String(packet.protocol || "").toUpperCase();[m
+[31m-[m
+[31m-  if (baseProtocol.includes("HTTP")) {[m
+[31m-    return "HTTP";[m
+[31m-  }[m
+[31m-[m
+[31m-  if (baseProtocol.includes("DNS")) {[m
+[31m-    return "DNS";[m
+[31m-  }[m
+[31m-[m
+[31m-  if (baseProtocol.includes("TCP")) {[m
+[31m-    return "TCP";[m
+[31m-  }[m
+[31m-[m
+[31m-  if (baseProtocol.includes("UDP")) {[m
+[31m-    return "UDP";[m
+[31m-  }[m
+[31m-[m
+[31m-  // Simple fallback: check text fields for common protocol hints.[m
+[31m-  const textBlob = [packet.payload, packet.data, packet.info][m
+[31m-    .filter(Boolean)[m
+[31m-    .join(" ")[m
+[31m-    .toLowerCase();[m
+[31m-[m
+[31m-  if (textBlob.includes("http")) {[m
+[31m-    return "HTTP";[m
+[31m-  }[m
+[31m-[m
+[31m-  if (textBlob.includes("dns")) {[m
+[31m-    return "DNS";[m
+[31m-  }[m
+[31m-[m
+[31m-  return baseProtocol || "UNKNOWN";[m
+[31m-};[m
+[31m-[m
+[31m-const detectSuspiciousMatch = (packet) => {[m
+[31m-  const textBlob = [packet.payload, packet.data, packet.info][m
+[31m-    .filter(Boolean)[m
+[31m-    .join(" ")[m
+[31m-    .toLowerCase();[m
+[31m-[m
+[31m-  const matchedKeywords = SUSPICIOUS_KEYWORDS.filter((keyword) =>[m
+[31m-    textBlob.includes(keyword)[m
+[31m-  );[m
+[31m-[m
+[31m-  return {[m
+[31m-    isSuspicious: matchedKeywords.length > 0,[m
+[31m-    matchedKeywords[m
+[31m-  };[m
+[31m-};[m
+[31m-[m
+[31m-const analyzePacket = (packet) => {[m
+[31m-  const protocolType = detectProtocolType(packet);[m
+[31m-  const suspiciousCheck = detectSuspiciousMatch(packet);[m
+[31m-[m
+[31m-  return {[m
+[31m-    sourceIp: packet.sourceIp || "",[m
+[31m-    destinationIp: packet.destinationIp || "",[m
+[31m-    protocol: packet.protocol || "UNKNOWN",[m
+[31m-    protocolType,[m
+[31m-    timestamp: packet.timestamp || new Date().toISOString(),[m
+[31m-    alert: suspiciousCheck.isSuspicious,[m
+[31m-    matchedKeywords: suspiciousCheck.matchedKeywords,[m
+[31m-    rawPacket: packet[m
+[31m-  };[m
+[31m-};[m
+[31m-[m
+[31m-module.exports = {[m
+[31m-  analyzePacket[m
+[31m-};[m

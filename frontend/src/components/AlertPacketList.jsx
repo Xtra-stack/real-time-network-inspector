@@ -15,22 +15,22 @@ const AlertPacketList = ({ packets }) => {
   const alertPackets = packets.filter((packet) => packet.alert === true);
 
   if (!alertPackets.length) {
-    return <p className="alerts-empty">No suspicious packets detected yet.</p>;
+    return <p className="alerts-empty">No keyword matches in the current packet set.</p>;
   }
 
   return (
     <ul className="alert-list">
       {alertPackets.map((packet, index) => (
         <li
-          key={`${packet.timestamp}-${packet.sourceIp}-${index}`}
+          key={`${packet.captureId}-${packet.packetNumber}-${index}`}
           className="alert-item"
         >
           <div className="alert-top">
-            <span className="alert-badge">ALERT</span>
-            <span className="alert-protocol">{packet.protocolType || packet.protocol || "-"}</span>
+            <span className="alert-badge">MATCH</span>
+            <span className="alert-protocol">{packet.protocol || "UNKNOWN"}</span>
           </div>
           <p>
-            {packet.sourceIp || "-"} {"->"} {packet.destinationIp || "-"}
+            {packet.ip?.source || packet.arp?.senderIp || "-"} {"->"} {packet.ip?.destination || packet.arp?.targetIp || "-"}
           </p>
           <p className="alert-time">{formatTimestamp(packet.timestamp)}</p>
         </li>

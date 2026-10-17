@@ -1,138 +1,121 @@
-# Real-Time Network Inspector
+# Network Packet Inspector
 
-A beginner-friendly, full-stack network monitoring project that captures live packets, analyzes traffic, stores logs, and visualizes everything in a real-time dashboard.
+A real-time network packet inspection platform built for authorized monitoring and debugging. The project combines a native C++ capture provider, a Node.js backend, and a React dashboard to collect live traffic, decode packets, and surface suspicious or high-priority activity.
 
-## Project Overview
+This project is designed to be practical and readable rather than over-engineered. The capture path is real, the packet bytes are preserved, and the UI works from actual Npcap/libpcap data rather than fabricated summaries.
 
-This project is built to demonstrate practical networking and full-stack development in one system:
+## What this project does
 
-- A C++ sniffer captures live packets from a selected network interface.
-- A Node.js backend runs the sniffer, analyzes packets, stores logs, and provides APIs.
-- A React frontend shows live traffic, alerts, and charts.
-
-The design goal is simple and readable implementation over complex architecture.
-
-## Tech Stack
-
-- C++ (libpcap / Npcap)
-- Node.js + Express
-- Socket.io
-- MongoDB + Mongoose
-- React + Vite
-- Recharts
+- Enumerates live network interfaces on Windows via Npcap
+- Lets the user select an adapter and control capture state
+- Starts, pauses, resumes, and stops capture sessions cleanly
+- Preserves the original captured frame bytes for each packet
+- Decodes common protocols such as Ethernet, IPv4/IPv6, TCP, UDP, ICMP, ARP, and DNS
+- Displays live packet tables, per-packet details, and hex/ASCII views
+- Stores capture data and basic stats for lookup and inspection
+- Provides a dashboard for live monitoring and packet investigation
 
 ## Architecture
 
-The project is split into 3 modules:
+- C++ capture provider: `cpp-sniffer/main.cpp`
+  - Uses libpcap/Npcap to open a selected interface
+  - Captures raw frames and emits JSON records with metadata and base64 frame bytes
+  - Exposes interface discovery and lifecycle control from the Node layer
 
-### 1) C++ Sniffer
+- Node.js backend: `backend/src/`
+  - Starts and manages the native sniffer process
+  - Validates interfaces and capture lifecycle state
+  - Parses capture records and normalizes packet objects
+  - Exposes REST APIs and Socket.IO events for the dashboard
+  - Stores packet logs and related analysis data when MongoDB is configured
 
-Location: cpp-sniffer/
+- React frontend: `frontend/src/`
+  - Selects an interface and control buttons for Start, Pause, Resume, and Stop
+  - Streams packet updates in real time
+  - Displays packet lists, protocol details, and byte-level views
 
-Responsibilities:
+## Important technical rule
 
-- Capture packets from a network interface.
-- Extract source IP, destination IP, protocol, and timestamp.
-- Print one JSON packet per line to standard output.
+This project does not reconstruct raw bytes from IP addresses or protocol labels. The raw frame is captured from the native library and preserved as-is. If the provider does not emit the original frame bytes, the UI cannot display the actual packet data reliably.
 
-### 2) Backend API + Real-Time Server
+The fix was to repair the capture source so it sends real packet bytes instead of metadata-only summaries.
 
-Location: backend/
+## Current verified capture flow
 
-Responsibilities:
+The working flow is:
 
-- Run the compiled C++ sniffer using child_process.
-- Read sniffer stdout line by line.
-- Parse and analyze packet data.
-- Detect protocol type (HTTP, DNS, TCP, UDP).
-- Flag suspicious packets using keyword matching.
-- Store packet logs in MongoDB.
-- Expose REST APIs.
-- Emit real-time packet updates via Socket.io.
+1. The native capture provider enumerates adapters and returns real Npcap device IDs.
+2. Node selects the chosen interface and launches the child capture process.
+3. Each packet is emitted as a JSON record containing:
+   - timestamp
+   - interface metadata
+   - capture length and original length
+   - datalink information
+   - base64-encoded raw frame bytes
+4. The backend parses and normalizes the packet and sends it through Socket.IO.
+5. The frontend loads packet details on demand from the selected packet ID and renders the full record.
 
-### 3) Frontend Dashboard
+## Capture lifecycle
 
-Location: frontend/
+The system supports the following states:
 
-Responsibilities:
+- Idle
+- Starting
+- Running
+- Paused
+- Stopping
 
-- Fetch initial packet data from REST APIs.
-- Receive live packet updates from Socket.io.
-- Show latest packet feed and suspicious alerts.
-- Visualize protocol distribution and traffic-over-time charts.
+The lifecycle logic is designed to return cleanly to Idle after Stop so the user can start a new capture session immediately. This includes resetting the current capture state and clearing per-session timers before the next run.
 
-## Features
+## Project structure
 
-- Live packet capture from system interface.
-- JSON-based packet stream from sniffer.
-- Packet analysis and alert detection.
-- Persistent packet logging in MongoDB.
-- REST APIs for packets, alerts, and stats.
-- Real-time packet broadcasting with Socket.io.
-- Dashboard with:
-  - latest live packets
-  - highlighted suspicious packets
-  - protocol distribution pie chart
-  - traffic-over-time line chart
+```text
+README.md
+backend/
+  package.json
+  src/
+    app.js
+    server.js
+    routes/
+    controllers/
+    services/
+    models/
+  test/
+cpp-sniffer/
+  main.cpp
+  README.md
+frontend/
+  package.json
+  src/
+```
 
-## API Endpoints
+## Setup
 
-Base URL: http://localhost:5000/api
-
-- GET /health
-- GET /packets
-- GET /alerts
-- GET /stats
-
-## Setup Instructions
-
-## Prerequisites
+### Prerequisites
 
 - Node.js 18+
-- MongoDB running locally (or a MongoDB URI)
-- C++ compiler
-- libpcap (Linux/macOS) or Npcap + developer libs (Windows)
+- A C++ toolchain compatible with your platform
+- Npcap installed on Windows for live packet capture
+- Optional: MongoDB if you want persisted packet history
 
-## 1) Build C++ Sniffer
+### Windows capture setup
 
-Open a terminal in cpp-sniffer/.
+1. Install Npcap and ensure the driver is running.
+2. Confirm the adapter you want to use is available in the capture provider output.
+3. Build or rebuild the C++ sniffer against the local Npcap SDK and runtime setup.
+4. Ensure the sniffer binary can resolve its required DLLs when spawned by Node.
 
-Linux:
-
-```bash
-g++ main.cpp -lpcap -o sniffer
-```
-
-Windows (Developer Command Prompt):
-
-```bash
-cl /EHsc main.cpp wpcap.lib Ws2_32.lib
-```
-
-## 2) Configure Backend
-
-1. Open backend/.
-2. Copy .env.example to .env.
-3. Update values if needed.
-
-Example .env:
-
-```env
-PORT=5000
-MONGODB_URI=mongodb://127.0.0.1:27017/network_inspector
-SNIFFER_COMMAND=../cpp-sniffer/sniffer
-SNIFFER_INTERFACE=eth0
-```
-
-## 3) Install and Run Backend
+### Backend
 
 ```bash
 cd backend
 npm install
-npm run dev
+npm start
 ```
 
-## 4) Install and Run Frontend
+The backend normally listens on port 5000.
+
+### Frontend
 
 ```bash
 cd frontend
@@ -140,50 +123,47 @@ npm install
 npm run dev
 ```
 
-Open the frontend URL shown by Vite (usually http://localhost:5173).
+Open the URL printed by Vite in the terminal, usually http://localhost:5173.
 
-## How It Works (Data Flow)
+## API endpoints
 
-1. C++ sniffer captures packets and prints JSON lines.
-2. Backend starts the sniffer process and reads stdout stream.
-3. Each packet is parsed and analyzed.
-4. Backend stores analyzed packets in MongoDB.
-5. Backend exposes historical data through REST APIs.
-6. Frontend loads initial packets and alerts using /packets and /alerts.
-7. Backend emits each new analyzed packet over Socket.io.
-8. Frontend receives live packet events and updates UI instantly.
+Base URL: http://localhost:5000
 
-## Project Structure
+- GET /api/health
+- GET /api/capture/interfaces
+- GET /api/capture/status
+- POST /api/capture/start
+- POST /api/capture/pause
+- POST /api/capture/resume
+- POST /api/capture/stop
+- GET /api/packets
+- GET /api/packets/:captureId/:packetNumber
+- GET /api/stats
+- GET /api/alerts
 
-```text
-.
-|-- backend/
-|   |-- src/
-|   |   |-- config/
-|   |   |-- controllers/
-|   |   |-- models/
-|   |   |-- routes/
-|   |   `-- services/
-|   `-- .env.example
-|-- cpp-sniffer/
-|   `-- main.cpp
-`-- frontend/
-    `-- src/
-        |-- components/
-        `-- App.jsx
-```
+## Real-time events
 
-## Future Improvements
+The backend emits Socket.IO events for live packet updates and analysis status. The frontend uses these events to update the packet list without reloading the page.
 
-- Add authentication for dashboard access.
-- Add packet filtering (protocol, IP, time range).
-- Add pagination for packet history APIs.
-- Improve suspicious detection with rule sets.
-- Add unit/integration tests.
-- Add Docker setup for easier deployment.
-- Add deployment config for cloud hosting.
+## Verification status
 
-## Notes
+The project has been validated in the current workspace with real adapter discovery and lifecycle checks:
 
-- This project is intended for learning and monitoring your own network environment.
-- Run packet capture with proper permissions.
+- Real Npcap interfaces were enumerated successfully
+- Capture start, pause, resume, and stop transitions were tested
+- Same-interface and different-interface restart flows were validated
+- Backend test suite: 35 passed
+- Frontend test suite: 1 passed
+- Production frontend build: succeeded
+
+## Notes for use
+
+- Only capture traffic you are authorized to inspect.
+- Do not treat the UI as proof of malicious activity without validating the packet content.
+- A valid capture provider is required before packet decoding can be trusted.
+- When the packet engine does not emit raw bytes, the correct fix is to repair the capture source, not to invent data from metadata.
+
+## Commit and iteration guidance
+
+This project is meant to be built incrementally and kept understandable. Prefer small, meaningful changes and verify them before moving on. When you complete a feature, commit with a clear message that reflects the actual behavior added or fixed.
+
